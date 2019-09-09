@@ -58,11 +58,7 @@ type taskClassIdentifier struct {
 }
 
 func (tcID taskClassIdentifier) String() string {
-	if tcID.repo.Revision != "" {
-		return fmt.Sprintf("%stasks/%s@%s", tcID.repo.GetIdentifier(), tcID.Name, tcID.repo.Revision)
-	} else {
-		return fmt.Sprintf("%stasks/%s@master", tcID.repo.GetIdentifier(), tcID.Name)
-	}
+	return fmt.Sprintf("%stasks/%s@%s", tcID.repo.GetIdentifier(), tcID.Name, tcID.repo.Hash)
 }
 
 func (tcID *taskClassIdentifier) UnmarshalYAML(unmarshal func(interface{}) error) (err error) {
