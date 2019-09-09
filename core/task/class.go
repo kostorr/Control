@@ -40,15 +40,15 @@ type TaskClass info
 //   the following information is enough to run the task even with no environment or
 //   role info.
 type info struct {
-	Identifier  taskClassIdentifier		`yaml:"name"`
-	Control     struct {
-		Mode    controlmode.ControlMode `yaml:"mode"`
-	}                                   `yaml:"control"`
-	Command     *common.CommandInfo     `yaml:"command"`
-	Wants       ResourceWants           `yaml:"wants"`
-	Bind        []channel.Inbound       `yaml:"bind"`
+	Identifier taskClassIdentifier `yaml:"name"`
+	Control    struct {
+		Mode controlmode.ControlMode `yaml:"mode"`
+	} `yaml:"control"`
+	Command     *common.CommandInfo         `yaml:"command"`
+	Wants       ResourceWants               `yaml:"wants"`
+	Bind        []channel.Inbound           `yaml:"bind"`
 	Properties  controlcommands.PropertyMap `yaml:"properties"`
-	Constraints []constraint.Constraint `yaml:"constraints"`
+	Constraints []constraint.Constraint     `yaml:"constraints"`
 }
 
 type taskClassIdentifier struct {
@@ -58,7 +58,7 @@ type taskClassIdentifier struct {
 }
 
 func (tcID taskClassIdentifier) String() string {
-	return fmt.Sprintf("%stasks/%s@%s", tcID.repoIdentifier, tcID.Name, tcID.hash)
+	return fmt.Sprintf("%stasks/%s@%s", tcID.repo.GetIdentifier(), tcID.Name, tcID.repo.Hash)
 }
 
 func (tcID *taskClassIdentifier) UnmarshalYAML(unmarshal func(interface{}) error) (err error) {
@@ -67,16 +67,16 @@ func (tcID *taskClassIdentifier) UnmarshalYAML(unmarshal func(interface{}) error
 }
 
 type ResourceWants struct {
-	Cpu     *float64                `yaml:"cpu"`
-	Memory  *float64                `yaml:"memory"`
-	Ports   Ranges                  `yaml:"ports"`
+	Cpu    *float64 `yaml:"cpu"`
+	Memory *float64 `yaml:"memory"`
+	Ports  Ranges   `yaml:"ports"`
 }
 
 func (rw *ResourceWants) UnmarshalYAML(unmarshal func(interface{}) error) (err error) {
 	type _resourceWants struct {
-		Cpu     *string                 `yaml:"cpu"`
-		Memory  *string                 `yaml:"memory"`
-		Ports   *string                 `yaml:"ports"`
+		Cpu    *string `yaml:"cpu"`
+		Memory *string `yaml:"memory"`
+		Ports  *string `yaml:"ports"`
 	}
 	aux := _resourceWants{}
 	err = unmarshal(&aux)
