@@ -31,6 +31,7 @@ import (
 	"github.com/AliceO2Group/Control/core/controlcommands"
 	"github.com/AliceO2Group/Control/core/task/channel"
 	"github.com/AliceO2Group/Control/core/task/constraint"
+	"github.com/AliceO2Group/Control/core/the"
 	"strconv"
 )
 
@@ -58,12 +59,22 @@ type taskClassIdentifier struct {
 }
 
 func (tcID taskClassIdentifier) String() string {
-	return fmt.Sprintf("%stasks/%s@%s", tcID.repo.GetIdentifier(), tcID.Name, tcID.repo.Hash)
+	return fmt.Sprintf("%stasks/%s@%s", tcID.repoIdentifier, tcID.Name, tcID.hash)
 }
 
 func (tcID *taskClassIdentifier) UnmarshalYAML(unmarshal func(interface{}) error) (err error) {
 	err = unmarshal(&tcID.Name)
 	return
+}
+
+func (tc *TaskClass) GetPrettyIdentifier() string {
+	tcID := tc.Identifier
+	currentRepo, ok := the.RepoManager().GetRepos()[tcID.repoIdentifier]
+	if ok && (tcID.hash == currentRepo.Hash) {
+		return fmt.Sprintf("%stasks/%s@%s", tcID.repoIdentifier, tcID.Name, currentRepo.Revision)
+	} else {
+		return fmt.Sprintf("%stasks/%s@%s", tcID.repoIdentifier, tcID.Name, tcID.hash)
+	}
 }
 
 type ResourceWants struct {

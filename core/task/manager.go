@@ -48,25 +48,25 @@ import (
 type KillTaskFunc func(*Task) error
 
 type Manager struct {
-	AgentCache         AgentCache
+	AgentCache AgentCache
 
-	mu                 sync.RWMutex
-	classes            map[string]*TaskClass
-	roster             Tasks
+	mu      sync.RWMutex
+	classes map[string]*TaskClass
+	roster  Tasks
 
 	resourceOffersDone <-chan DeploymentMap
 	tasksToDeploy      chan<- Descriptors
 	reviveOffersTrg    chan struct{}
 	cq                 *controlcommands.CommandQueue
 
-	doKillTask         KillTaskFunc
+	doKillTask KillTaskFunc
 }
 
 func NewManager(resourceOffersDone <-chan DeploymentMap,
-                tasksToDeploy chan<- Descriptors,
-                reviveOffersTrg chan struct{},
-                cq *controlcommands.CommandQueue,
-                killTaskFunc KillTaskFunc) (taskman *Manager) {
+	tasksToDeploy chan<- Descriptors,
+	reviveOffersTrg chan struct{},
+	cq *controlcommands.CommandQueue,
+	killTaskFunc KillTaskFunc) (taskman *Manager) {
 	taskman = &Manager{
 		classes:            make(map[string]*TaskClass),
 		roster:             make(Tasks, 0),
@@ -85,7 +85,7 @@ func NewManager(resourceOffersDone <-chan DeploymentMap,
 // matching role requests with offers (matchRoles).
 // The new role is not assigned to an environment and comes without a roleClass
 // function, as those two are filled out later on by Manager.AcquireTasks.
-func (m*Manager) NewTaskForMesosOffer(offer *mesos.Offer, descriptor *Descriptor, bindPorts map[string]uint64, executorId mesos.ExecutorID) (t *Task) {
+func (m *Manager) NewTaskForMesosOffer(offer *mesos.Offer, descriptor *Descriptor, bindPorts map[string]uint64, executorId mesos.ExecutorID) (t *Task) {
 	newId := uuid.NewUUID().String()
 	t = &Task{
 		name:         fmt.Sprintf("%s#%s", descriptor.TaskClassName, newId),
@@ -126,7 +126,7 @@ func getTaskClassList(taskClassesRequired []string) (taskClassList []*TaskClass,
 			return
 		}
 		repo = repoManager.GetRepos()[repo.GetIdentifier()] //get repo pointer from repomanager
-	 	if repo == nil { //should never end up here
+		if repo == nil {                                    //should never end up here
 			return nil, errors.New("getTaskClassList: repo not found for " + taskClass)
 		}
 
@@ -149,7 +149,7 @@ func getTaskClassList(taskClassesRequired []string) (taskClassList []*TaskClass,
 
 func (m *Manager) removeInactiveClasses() {
 
-	for taskClassIdentifier := range m.classes{
+	for taskClassIdentifier := range m.classes {
 		if len(m.roster.FilteredForClass(taskClassIdentifier)) == 0 {
 			delete(m.classes, taskClassIdentifier)
 		}
@@ -164,7 +164,7 @@ func (m *Manager) RemoveReposClasses(repoPath string) { //Currently unused
 
 	utils.EnsureTrailingSlash(&repoPath)
 
-	for taskClassIdentifier := range m.classes{
+	for taskClassIdentifier := range m.classes {
 		if strings.HasPrefix(taskClassIdentifier, repoPath) &&
 			len(m.roster.FilteredForClass(taskClassIdentifier)) == 0 {
 			delete(m.classes, taskClassIdentifier)
@@ -203,17 +203,17 @@ func (m *Manager) AcquireTasks(envId uuid.Array, taskDescriptors Descriptors) (e
 	defer m.mu.Unlock()
 
 	/*
-	Here's what's gonna happen:
-	1) check if any tasks are already in Roster, whether they are already locked
-	   in an environment, and whether their host has attributes that satisfy the
-	   constraints
-	  1a) TODO: for each of them in Roster with matching attributes but wrong class,
-	      mark for teardown and mesos-deployment
-	  1b) for each of them in Roster with matching attributes and class, mark for
-	      takeover and reconfiguration
-	3) TODO: teardown the tasks in tasksToTeardown
-	4) start the tasks in tasksToRun
-	5) ensure that all of them reach a CONFIGURED state
+		Here's what's gonna happen:
+		1) check if any tasks are already in Roster, whether they are already locked
+		   in an environment, and whether their host has attributes that satisfy the
+		   constraints
+		  1a) TODO: for each of them in Roster with matching attributes but wrong class,
+		      mark for teardown and mesos-deployment
+		  1b) for each of them in Roster with matching attributes and class, mark for
+		      takeover and reconfiguration
+		3) TODO: teardown the tasks in tasksToTeardown
+		4) start the tasks in tasksToRun
+		5) ensure that all of them reach a CONFIGURED state
 	*/
 
 	tasksToRun := make(Descriptors, 0)
@@ -223,12 +223,12 @@ func (m *Manager) AcquireTasks(envId uuid.Array, taskDescriptors Descriptors) (e
 	tasksAlreadyRunning := make(DeploymentMap)
 	for _, descriptor := range taskDescriptors {
 		/*
-		For each descriptor we check m.AgentCache for agent attributes:
-		this allows us for each idle task in roster, get agentid and plug it in cache to get the
-		attributes for that host, and then we know whether
-		1) a running task of the same class on that agent would qualify
-		2) TODO: given enough resources obtained by freeing tasks, that agent would qualify
-		 */
+			For each descriptor we check m.AgentCache for agent attributes:
+			this allows us for each idle task in roster, get agentid and plug it in cache to get the
+			attributes for that host, and then we know whether
+			1) a running task of the same class on that agent would qualify
+			2) TODO: given enough resources obtained by freeing tasks, that agent would qualify
+		*/
 
 		// Filter function that accepts a Task if
 		// a) it's !Locked
@@ -295,7 +295,7 @@ func (m *Manager) AcquireTasks(envId uuid.Array, taskDescriptors Descriptors) (e
 		// the offers, we ask Mesos to run the required roles - if any.
 
 		m.reviveOffersTrg <- struct{}{} // signal scheduler to revive offers
-		<- m.reviveOffersTrg            // we only continue when it's done
+		<-m.reviveOffersTrg             // we only continue when it's done
 
 		m.tasksToDeploy <- tasksToRun // blocks until received
 		log.WithField("environmentId", envId).
@@ -304,7 +304,7 @@ func (m *Manager) AcquireTasks(envId uuid.Array, taskDescriptors Descriptors) (e
 		// IDEA: a flps mesos-role assigned to all mesos agents on flp hosts, and then a static
 		//       reservation for that mesos-role on behalf of our scheduler
 
-		deployedTasks = <- m.resourceOffersDone
+		deployedTasks = <-m.resourceOffersDone
 		log.WithField("tasks", deployedTasks).
 			Debug("resourceOffers is done, new tasks running")
 
@@ -400,7 +400,7 @@ func (m *Manager) ConfigureTasks(envId uuid.Array, tasks Tasks) error {
 	for _, task := range tasks {
 		taskPath := task.parent.GetPath()
 		for inbChName, port := range task.GetBindPorts() {
-			bindMap[taskPath + ":" + inbChName] = channel.Endpoint{Host: task.GetHostname(), Port: port}
+			bindMap[taskPath+":"+inbChName] = channel.Endpoint{Host: task.GetHostname(), Port: port}
 		}
 	}
 	log.WithFields(logrus.Fields{"bindMap": pp.Sprint(bindMap), "envId": envId.String()}).
@@ -421,7 +421,7 @@ func (m *Manager) ConfigureTasks(envId uuid.Array, tasks Tasks) error {
 	cmd := controlcommands.NewMesosCommand_Transition(receivers, src, event, dest, args)
 	m.cq.Enqueue(cmd, notify)
 
-	response := <- notify
+	response := <-notify
 	close(notify)
 
 	if response == nil {
@@ -461,7 +461,7 @@ func (m *Manager) TransitionTasks(tasks Tasks, src string, event string, dest st
 	cmd := controlcommands.NewMesosCommand_Transition(receivers, src, event, dest, args)
 	m.cq.Enqueue(cmd, notify)
 
-	response := <- notify
+	response := <-notify
 	close(notify)
 
 	errText := response.Err().Error()

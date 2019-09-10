@@ -386,7 +386,9 @@ func (manager *RepoManager) EnsureReposPresent(taskClassesRequired []string) (er
 				return
 			}
 		} else {
-			if existingRepo.Revision != repo.Revision {
+			if existingRepo.Hash != repo.Revision {
+				// Here we have to check with the existing repo's hash,
+				// as the revision coming from the task class is always a hash and never a name
 				err = existingRepo.checkoutRevision(repo.Revision)
 				if err != nil {
 					return

@@ -106,6 +106,13 @@ func (t *Task) GetClassName() string {
 	return ""
 }
 
+func (t *Task) GetPrettyClassName() string {
+	if t != nil {
+		return t.GetTaskClass().GetPrettyIdentifier()
+	}
+	return ""
+}
+
 // Returns a consolidated CommandInfo for this Task, based on Roles tree and
 // TaskClass.
 func (t Task) BuildTaskCommand() (cmd *common.TaskCommandInfo) {
