@@ -96,7 +96,7 @@ func taskToShortTaskInfo(t *task.Task) (sti *pb.ShortTaskInfo) {
 		TaskId: t.GetTaskId(),
 		Status: "UNKNOWN",
 		State:  "UNKNOWN",
-		ClassName: t.GetClassName(),
+		ClassName: t.GetPrettyClassName(),
 		DeploymentInfo: &pb.TaskDeploymentInfo{
 			Hostname: t.GetHostname(),
 			AgentId: t.GetAgentId(),
