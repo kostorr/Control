@@ -141,6 +141,7 @@ func getTaskClassList(taskClassesRequired []string) (taskClassList []*TaskClass,
 		}
 
 		taskClassStruct.Identifier.repoIdentifier = repo.GetIdentifier()
+		taskClassStruct.Identifier.revision = repo.Revision
 		taskClassStruct.Identifier.hash = repo.Hash
 		taskClassList = append(taskClassList, &taskClassStruct)
 	}
@@ -190,7 +191,7 @@ func (m *Manager) RefreshClasses(taskClassesRequired []string) (err error) {
 		taskClassIdentifier := class.Identifier.String()
 		// If it already exists we update, otherwise we add the new class
 		if _, ok := m.classes[taskClassIdentifier]; ok {
-			*m.classes[taskClassIdentifier] = *class
+			*m.classes[taskClassIdentifier] = *class //TODO: Task classes with different revisions but same hashes should *NOT* be overwritten
 		} else {
 			m.classes[taskClassIdentifier] = class
 		}

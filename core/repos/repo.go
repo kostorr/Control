@@ -120,7 +120,7 @@ func (r *Repo) ResolveTaskClassIdentifier(loadTaskClass string) (taskClassIdenti
 		taskClassIdentifier = loadTaskClass
 	}
 
-	taskClassIdentifier += "@" + r.Hash
+	taskClassIdentifier += "@" + r.Hash //TODO: This could be the culprit for OCTRL-137
 
 	return
 }
@@ -199,4 +199,23 @@ func (r *Repo) getWorkflows() ([]string, error) {
 		}
 	}
 	return workflows, nil
+}
+
+func (r *Repo) CheckHashAgainstRevision(hash string, revision string) (bool, error) {
+	ref, err := git.PlainOpen(r.getCloneDir())
+	if err != nil {
+		return false, err
+	}
+
+	//Try remotely as a priority (branches) so that we don't check against old, dangling branch refs (e.g. master)
+	newHash, err := ref.ResolveRevision(plumbing.Revision("origin/" + revision))
+	if err != nil {
+	 	//Try locally (tags + hashes)
+		newHash, err = ref.ResolveRevision(plumbing.Revision(revision))
+		if err != nil {
+			return false, errors.New("checkoutRevision: " + err.Error())
+		}
+	}
+
+	return newHash.String() == hash, nil
 }

@@ -54,6 +54,7 @@ type info struct {
 
 type taskClassIdentifier struct {
 	repoIdentifier string
+	revision 	   string
 	hash           string
 	Name           string
 }
@@ -68,10 +69,16 @@ func (tcID *taskClassIdentifier) UnmarshalYAML(unmarshal func(interface{}) error
 }
 
 func (tc *TaskClass) GetPrettyIdentifier() string {
+	revisionStillValid := false
 	tcID := tc.Identifier
 	currentRepo, ok := the.RepoManager().GetRepos()[tcID.repoIdentifier]
-	if ok && (tcID.hash == currentRepo.Hash) {
-		return fmt.Sprintf("%stasks/%s@%s", tcID.repoIdentifier, tcID.Name, currentRepo.Revision)
+
+	if ok {
+		revisionStillValid, _ = currentRepo.CheckHashAgainstRevision(tcID.hash, tcID.revision)
+	}
+
+	if revisionStillValid {
+		return fmt.Sprintf("%stasks/%s@%s", tcID.repoIdentifier, tcID.Name, tcID.revision)
 	} else {
 		return fmt.Sprintf("%stasks/%s@%s", tcID.repoIdentifier, tcID.Name, tcID.hash)
 	}
