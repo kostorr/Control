@@ -169,6 +169,9 @@ func (manager *RepoManager) AddRepo(repoPath string) error {
 		if len(manager.repoList) == 1 {
 			manager.setDefaultRepo(repo)
 		}
+
+		// Update hash <-> revision map
+		repo.hashRevisionMap[repo.Hash] = repo.Revision
 	} else {
 		return errors.New("Repo already present")
 	}
@@ -241,6 +244,7 @@ func (manager *RepoManager) RefreshRepos() error {
 		if err != nil {
 			return errors.New("refresh repo for " + repo.GetIdentifier() + ":" + err.Error())
 		}
+		_ = repo.updateHashRevisionMapping()
 	}
 
 	return nil
@@ -367,18 +371,23 @@ func (manager *RepoManager) UpdateDefaultRepo(repoPath string) error { //unused
 }
 
 func (manager *RepoManager) EnsureReposPresent(taskClassesRequired []string) (err error) {
-	reposRequired := make(map[Repo]bool)
+	reposRequired := make(map[string]bool)
 	for _, taskClass := range taskClassesRequired {
 		var newRepo *Repo
 		newRepo, err = NewRepo(taskClass)
 		if err != nil {
 			return
 		}
-		reposRequired[*newRepo] = true
+		reposRequired[newRepo.GetIdentifier()] = true
 	}
 
 	// Make sure that the relevant repos are present and checked out on the expected revision
-	for repo  := range reposRequired {
+	for repoIdentifier := range reposRequired {
+		var repo *Repo
+		repo, err = NewRepo(repoIdentifier)
+		if err != nil {
+			return
+		}
 		existingRepo, ok := manager.repoList[repo.GetIdentifier()]
 		if !ok {
 			err = manager.AddRepo(repo.GetIdentifier())

@@ -40,6 +40,7 @@ type Repo struct {
 	Revision string
 	Hash string
 	Default bool
+	hashRevisionMap map[string]string
 }
 
 func NewRepo(repoPath string) (*Repo, error) {
@@ -63,7 +64,7 @@ func NewRepo(repoPath string) (*Repo, error) {
 	}
 
 	return &Repo{repoUrlSlice[0], repoUrlSlice[1],
-		repoUrlSlice[2], revision, "", false}, nil
+		repoUrlSlice[2], revision, "", false, make(map[string]string)}, nil
 }
 
 func (r *Repo) GetIdentifier() string {
@@ -120,7 +121,7 @@ func (r *Repo) ResolveTaskClassIdentifier(loadTaskClass string) (taskClassIdenti
 		taskClassIdentifier = loadTaskClass
 	}
 
-	taskClassIdentifier += "@" + r.Hash //TODO: This could be the culprit for OCTRL-137
+	taskClassIdentifier += "@" + r.Hash
 
 	return
 }
@@ -201,21 +202,38 @@ func (r *Repo) getWorkflows() ([]string, error) {
 	return workflows, nil
 }
 
-func (r *Repo) CheckHashAgainstRevision(hash string, revision string) (bool, error) {
-	ref, err := git.PlainOpen(r.getCloneDir())
-	if err != nil {
-		return false, err
+func (r *Repo) CheckHashAgainstRevision(hash string, revision string) bool {
+	if r.hashRevisionMap[hash] == revision {
+		return true
 	}
+	return false
+}
 
-	//Try remotely as a priority (branches) so that we don't check against old, dangling branch refs (e.g. master)
-	newHash, err := ref.ResolveRevision(plumbing.Revision("origin/" + revision))
-	if err != nil {
-	 	//Try locally (tags + hashes)
-		newHash, err = ref.ResolveRevision(plumbing.Revision(revision))
+func (r *Repo) updateHashRevisionMapping() error { //TODO: Handle cases where revision gives nothing
+	for hash, revision := range r.hashRevisionMap {
+		//checkout revision
+		//if resolvedhash == hash do nothing
+		//else update entry corresponding to hash with invalid rev
+
+		ref, err := git.PlainOpen(r.getCloneDir())
 		if err != nil {
-			return false, errors.New("checkoutRevision: " + err.Error())
+			return err
+		}
+
+		//Try remotely as a priority (branches) so that we don't check out old, dangling branch refs (e.g. master)
+		resolvedHash, err := ref.ResolveRevision(plumbing.Revision("origin/" + revision))
+		if err != nil {
+			//Try locally (tags + hashes)
+			resolvedHash, err = ref.ResolveRevision(plumbing.Revision(revision))
+			if err != nil {
+				return errors.New("checkoutRevision: " + err.Error())
+			}
+		}
+
+		if resolvedHash.String() != hash {
+			r.hashRevisionMap[hash] = ""
 		}
 	}
 
-	return newHash.String() == hash, nil
+	return nil
 }

@@ -120,13 +120,14 @@ func getTaskClassList(taskClassesRequired []string) (taskClassList []*TaskClass,
 	for _, taskClass := range taskClassesRequired {
 		taskClassString := strings.Split(taskClass, "@")
 		taskClassFile := taskClassString[0] + ".yaml"
-		var repo *repos.Repo
-		repo, err = repos.NewRepo(strings.Split(taskClassFile, "tasks/")[0])
+		var requestedRepo *repos.Repo
+		requestedRepo, err = repos.NewRepo(strings.Split(taskClassFile, "tasks/")[0] + "@" + taskClassString[1])
 		if err != nil {
 			return
 		}
-		repo = repoManager.GetRepos()[repo.GetIdentifier()] //get repo pointer from repomanager
-		if repo == nil {                                    //should never end up here
+		var existingRepo *repos.Repo
+		existingRepo = repoManager.GetRepos()[requestedRepo.GetIdentifier()] //get repo pointer from repomanager
+		if existingRepo == nil {                                    //should never end up here
 			return nil, errors.New("getTaskClassList: repo not found for " + taskClass)
 		}
 
@@ -140,9 +141,9 @@ func getTaskClassList(taskClassesRequired []string) (taskClassList []*TaskClass,
 			return nil, err
 		}
 
-		taskClassStruct.Identifier.repoIdentifier = repo.GetIdentifier()
-		taskClassStruct.Identifier.revision = repo.Revision
-		taskClassStruct.Identifier.hash = repo.Hash
+		taskClassStruct.Identifier.repoIdentifier = requestedRepo.GetIdentifier()
+		//taskClassStruct.Identifier.revision = requestedRepo.Revision
+		taskClassStruct.Identifier.hash = requestedRepo.Revision
 		taskClassList = append(taskClassList, &taskClassStruct)
 	}
 	return taskClassList, nil

@@ -74,7 +74,7 @@ func (tc *TaskClass) GetPrettyIdentifier() string {
 	currentRepo, ok := the.RepoManager().GetRepos()[tcID.repoIdentifier]
 
 	if ok {
-		revisionStillValid, _ = currentRepo.CheckHashAgainstRevision(tcID.hash, tcID.revision)
+		revisionStillValid = currentRepo.CheckHashAgainstRevision(tcID.hash, tcID.revision)
 	}
 
 	if revisionStillValid {
